@@ -1,0 +1,48 @@
+# Configuration file for Smart Crop Recommendation System
+
+models:
+  crop_recommendation:
+    algorithm: RandomForest
+    params:
+      n_estimators: 100
+      random_state: 42
+      max_depth: 15
+    path: models/crop_recommendation/rf_model.pkl
+    
+  fertilizer_prediction:
+    algorithm: RandomForest
+    params:
+      n_estimators: 100
+      random_state: 42
+      max_depth: 15
+    path: models/fertilizer_prediction/rf_model.pkl
+    
+  yield_estimation:
+    algorithm: RandomForest
+    params:
+      n_estimators: 100
+      random_state: 42
+      max_depth: 15
+    path: models/yield_estimation/rf_model.pkl
+
+data:
+  paths:
+    raw: data/raw/
+    processed: data/processed/
+    external: data/external/
+  split_ratios:
+    train: 0.7
+    val: 0.15
+    test: 0.15
+  random_state: 42
+
+api:
+  enabled: false  # Set to true when ready for API integration
+  weather_api_key: null
+  
+streamlit:
+  page_title: "Smart Crop Recommendation System"
+  page_icon: "🌱"
+  layout: "wide"
+  sidebar_state: "expanded"
+
