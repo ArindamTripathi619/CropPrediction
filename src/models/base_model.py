@@ -93,20 +93,43 @@ class BaseModel(ABC):
         if not self.is_trained:
             raise ValueError(f"{self.model_name} is not trained yet.")
         
-        from sklearn.metrics import (accuracy_score, precision_score, recall_score, 
-                                    f1_score, classification_report, confusion_matrix,
-                                    mean_squared_error, mean_absolute_error, r2_score)
-        
+        from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                                    f1_score, mean_squared_error, mean_absolute_error, r2_score)
+        from sklearn.utils.multiclass import type_of_target
+
         y_pred = self.predict(X)
-        
-        # Determine if classification or regression based on target type
-        if y.dtype in ['object', 'category'] or hasattr(y, 'cat'):
+
+        # Normalize y to numpy array / pandas Series for type checking
+        try:
+            import numpy as _np
+            if hasattr(y, 'values'):
+                y_vals = y.values
+            else:
+                y_vals = _np.asarray(y)
+        except Exception:
+            y_vals = y
+
+        # Use sklearn's type_of_target to decide classification vs regression
+        is_classification = False
+        try:
+            ttype = type_of_target(y_vals)
+            if ttype in ('binary', 'multiclass', 'multilabel-indicator'):
+                is_classification = True
+        except Exception:
+            # Fallback heuristic: if dtype is object or categorical, treat as classification
+            try:
+                if hasattr(y, 'dtype') and (str(y.dtype) in ['object', 'category'] or getattr(y, 'cat', None) is not None):
+                    is_classification = True
+            except Exception:
+                is_classification = False
+
+        if is_classification:
             # Classification metrics
             accuracy = accuracy_score(y, y_pred)
             precision = precision_score(y, y_pred, average='weighted', zero_division=0)
             recall = recall_score(y, y_pred, average='weighted', zero_division=0)
             f1 = f1_score(y, y_pred, average='weighted', zero_division=0)
-            
+
             metrics = {
                 'accuracy': accuracy,
                 'precision': precision,
@@ -119,7 +142,7 @@ class BaseModel(ABC):
             mae = mean_absolute_error(y, y_pred)
             rmse = np.sqrt(mse)
             r2 = r2_score(y, y_pred)
-            
+
             metrics = {
                 'mse': mse,
                 'mae': mae,

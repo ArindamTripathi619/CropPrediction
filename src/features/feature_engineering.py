@@ -70,14 +70,21 @@ def create_ph_ranges(df: pd.DataFrame) -> pd.DataFrame:
     """
     df_engineered = df.copy()
     
+    # Support both 'pH' and lowercase 'ph' column names (tests/sample data use 'ph')
+    ph_col = None
     if 'pH' in df.columns:
+        ph_col = 'pH'
+    elif 'ph' in df.columns:
+        ph_col = 'ph'
+
+    if ph_col is not None:
         # pH categories (acidic, neutral, alkaline)
-        df_engineered['ph_acidic'] = df['pH'] < 6.5
-        df_engineered['ph_neutral'] = (df['pH'] >= 6.5) & (df['pH'] <= 7.5)
-        df_engineered['ph_alkaline'] = df['pH'] > 7.5
-        
+        df_engineered['ph_acidic'] = df[ph_col] < 6.5
+        df_engineered['ph_neutral'] = (df[ph_col] >= 6.5) & (df[ph_col] <= 7.5)
+        df_engineered['ph_alkaline'] = df[ph_col] > 7.5
+
         # pH deviation from neutral
-        df_engineered['ph_deviation'] = abs(df['pH'] - 7.0)
+        df_engineered['ph_deviation'] = abs(df[ph_col] - 7.0)
     
     return df_engineered
 
