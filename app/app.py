@@ -256,13 +256,66 @@ def show_fertilizer_prediction():
     st.title("🧪 Fertilizer Prediction")
     st.markdown("Predict optimal fertilizer requirements for your crops.")
     
+    # Import fertilizer input form
+    from components.input_form import render_fertilizer_input_form
+    
     # Render input form
-    input_data = render_input_form()
+    input_data = render_fertilizer_input_form()
     
     if st.button("Get Fertilizer Recommendations", type="primary"):
         if input_data is not None:
             with st.spinner("Analyzing soil composition..."):
-                st.info("Fertilizer prediction will be available after training the fertilizer model.")
+                try:
+                    # Load models if needed
+                    if not st.session_state.models_loaded:
+                        _, fertilizer_model, _ = load_models()
+                        if fertilizer_model:
+                            st.session_state.fertilizer_model = fertilizer_model
+                            st.session_state.models_loaded = True
+                        else:
+                            st.error("Could not load fertilizer model.")
+                            return
+                    
+                    # Check if fertilizer model is loaded
+                    if st.session_state.fertilizer_model is None:
+                        _, fertilizer_model, _ = load_models()
+                        st.session_state.fertilizer_model = fertilizer_model
+                    
+                    # Prepare input
+                    input_df = pd.DataFrame([input_data])
+                    
+                    # Handle categorical encoding
+                    from sklearn.preprocessing import LabelEncoder
+                    import joblib
+                    
+                    # Load preprocessor to get label encoders
+                    preprocessor_path = Path("models/fertilizer_prediction/preprocessor.pkl")
+                    if preprocessor_path.exists():
+                        preprocessor_data = joblib.load(preprocessor_path)
+                        label_encoders = preprocessor_data.get('label_encoders', {})
+                        
+                        # Encode categorical features
+                        if 'Soil Type' in label_encoders and 'Soil Type' in input_df.columns:
+                            input_df['Soil Type'] = label_encoders['Soil Type'].transform(input_df['Soil Type'])
+                        if 'Crop Type' in label_encoders and 'Crop Type' in input_df.columns:
+                            input_df['Crop Type'] = label_encoders['Crop Type'].transform(input_df['Crop Type'])
+                    
+                    # Get prediction
+                    prediction = st.session_state.fertilizer_model.predict(input_df)
+                    
+                    # Get prediction probabilities if available
+                    if hasattr(st.session_state.fertilizer_model, 'get_top_predictions'):
+                        recommendations = st.session_state.fertilizer_model.get_top_predictions(input_df, top_k=3)
+                    else:
+                        recommendations = [(prediction[0], 1.0)]
+                    
+                    # Display results
+                    render_fertilizer_results(recommendations, input_data)
+                
+                except Exception as e:
+                    st.error(f"Error getting fertilizer recommendations: {str(e)}")
+                    import traceback
+                    st.code(traceback.format_exc())
 
 
 def show_yield_estimation():
@@ -270,13 +323,62 @@ def show_yield_estimation():
     st.title("📊 Yield Estimation")
     st.markdown("Estimate potential crop yields based on your parameters.")
     
+    # Import yield input form
+    from components.input_form import render_yield_input_form
+    
     # Render input form
-    input_data = render_input_form()
+    input_data = render_yield_input_form()
     
     if st.button("Estimate Yield", type="primary"):
         if input_data is not None:
             with st.spinner("Calculating yield estimates..."):
-                st.info("Yield estimation will be available after training the yield model.")
+                try:
+                    # Load models if needed
+                    if not st.session_state.models_loaded:
+                        _, _, yield_model = load_models()
+                        if yield_model:
+                            st.session_state.yield_model = yield_model
+                            st.session_state.models_loaded = True
+                        else:
+                            st.error("Could not load yield model.")
+                            return
+                    
+                    # Check if yield model is loaded
+                    if st.session_state.yield_model is None:
+                        _, _, yield_model = load_models()
+                        st.session_state.yield_model = yield_model
+                    
+                    # Prepare input
+                    input_df = pd.DataFrame([input_data])
+                    
+                    # Handle categorical encoding
+                    import joblib
+                    
+                    # Load preprocessor to get label encoders
+                    preprocessor_path = Path("models/yield_estimation/preprocessor.pkl")
+                    if preprocessor_path.exists():
+                        preprocessor_data = joblib.load(preprocessor_path)
+                        label_encoders = preprocessor_data.get('label_encoders', {})
+                        
+                        # Encode categorical features
+                        for col in ['State', 'District', 'Season', 'Crop']:
+                            if col in label_encoders and col in input_df.columns:
+                                try:
+                                    input_df[col] = label_encoders[col].transform(input_df[col])
+                                except:
+                                    # If value not seen during training, use most common class
+                                    input_df[col] = 0
+                    
+                    # Get prediction
+                    prediction = st.session_state.yield_model.predict(input_df)
+                    
+                    # Display results
+                    render_yield_results(prediction[0], input_data)
+                
+                except Exception as e:
+                    st.error(f"Error estimating yield: {str(e)}")
+                    import traceback
+                    st.code(traceback.format_exc())
 
 
 def show_model_performance():
