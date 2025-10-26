@@ -102,12 +102,7 @@ def train_fertilizer_model(config):
     y = df[target_col]
     
     # Handle categorical columns
-    categorical_cols = X.select_dtypes(include=['object']).columns
-    if len(categorical_cols) > 0:
-        from sklearn.preprocessing import LabelEncoder
-        le = LabelEncoder()
-        for col in categorical_cols:
-            X[col] = le.fit_transform(X[col].astype(str))
+    # Categorical encoding will be handled by DataPreprocessor during preprocessing
     
     # Feature engineering
     X = engineer_features(X)
@@ -173,12 +168,7 @@ def train_yield_model(config):
     y = df[target_col]
     
     # Handle categorical columns
-    categorical_cols = X.select_dtypes(include=['object']).columns
-    if len(categorical_cols) > 0:
-        from sklearn.preprocessing import LabelEncoder
-        le = LabelEncoder()
-        for col in categorical_cols:
-            X[col] = le.fit_transform(X[col].astype(str))
+    # Categorical encoding will be handled by DataPreprocessor during preprocessing
     
     # Feature engineering
     X = engineer_features(X)

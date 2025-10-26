@@ -167,7 +167,12 @@ class DataPreprocessor:
         else:
             X = df_processed
             y = None
-        
+
+        # Encode categorical features (fit encoders when fit=True)
+        categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
+        if len(categorical_cols) > 0:
+            X = self.encode_categorical(X, categorical_cols)
+
         # Scale features
         X = self.scale_features(X, fit=fit)
         

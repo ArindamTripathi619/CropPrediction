@@ -110,6 +110,14 @@ def load_models():
 
 def main():
     """Main application function."""
+    # On startup, check for model/preprocessor artifacts and surface issues in the sidebar
+    missing = check_model_artifacts()
+    if missing:
+        with st.sidebar:
+            st.error("Some model artifacts are missing or incomplete. See details below and follow the DEV_SETUP.md to generate them.")
+            for item in missing:
+                st.write(f"- {item}")
+            st.markdown("\n**How to fix:** run the training pipeline to generate model and preprocessor artifacts, or copy trained artifacts into the `models/` folder.")
     
     # Sidebar
     with st.sidebar:
@@ -283,23 +291,32 @@ def show_fertilizer_prediction():
                     
                     # Prepare input
                     input_df = pd.DataFrame([input_data])
-                    
-                    # Handle categorical encoding
-                    from sklearn.preprocessing import LabelEncoder
+
+                    # Ensure preprocessor exists before attempting to predict (categorical features must be encoded)
                     import joblib
-                    
-                    # Load preprocessor to get label encoders
                     preprocessor_path = Path("models/fertilizer_prediction/preprocessor.pkl")
-                    if preprocessor_path.exists():
-                        preprocessor_data = joblib.load(preprocessor_path)
-                        label_encoders = preprocessor_data.get('label_encoders', {})
-                        
-                        # Encode categorical features
-                        if 'Soil Type' in label_encoders and 'Soil Type' in input_df.columns:
+                    if not preprocessor_path.exists():
+                        st.error("Preprocessor for fertilizer model not found. Please train the fertilizer model and save the preprocessor to 'models/fertilizer_prediction/preprocessor.pkl'.")
+                        return
+
+                    # Load preprocessor to get label encoders
+                    preprocessor_data = joblib.load(preprocessor_path)
+                    label_encoders = preprocessor_data.get('label_encoders', {})
+
+                    # Encode categorical features; if encoder missing, show helpful error
+                    if 'Soil Type' in input_df.columns:
+                        if 'Soil Type' in label_encoders:
                             input_df['Soil Type'] = label_encoders['Soil Type'].transform(input_df['Soil Type'])
-                        if 'Crop Type' in label_encoders and 'Crop Type' in input_df.columns:
+                        else:
+                            st.error("Label encoder for 'Soil Type' not found in preprocessor. Please ensure the preprocessor contains fitted label encoders.")
+                            return
+                    if 'Crop Type' in input_df.columns:
+                        if 'Crop Type' in label_encoders:
                             input_df['Crop Type'] = label_encoders['Crop Type'].transform(input_df['Crop Type'])
-                    
+                        else:
+                            st.error("Label encoder for 'Crop Type' not found in preprocessor. Please ensure the preprocessor contains fitted label encoders.")
+                            return
+
                     # Get prediction
                     prediction = st.session_state.fertilizer_model.predict(input_df)
                     
@@ -350,25 +367,31 @@ def show_yield_estimation():
                     
                     # Prepare input
                     input_df = pd.DataFrame([input_data])
-                    
-                    # Handle categorical encoding
+
+                    # Ensure preprocessor exists before attempting to predict (categorical features must be encoded)
                     import joblib
-                    
-                    # Load preprocessor to get label encoders
                     preprocessor_path = Path("models/yield_estimation/preprocessor.pkl")
-                    if preprocessor_path.exists():
-                        preprocessor_data = joblib.load(preprocessor_path)
-                        label_encoders = preprocessor_data.get('label_encoders', {})
-                        
-                        # Encode categorical features
-                        for col in ['State', 'District', 'Season', 'Crop']:
-                            if col in label_encoders and col in input_df.columns:
+                    if not preprocessor_path.exists():
+                        st.error("Preprocessor for yield model not found. Please train the yield model and save the preprocessor to 'models/yield_estimation/preprocessor.pkl'.")
+                        return
+
+                    # Load preprocessor to get label encoders
+                    preprocessor_data = joblib.load(preprocessor_path)
+                    label_encoders = preprocessor_data.get('label_encoders', {})
+
+                    # Encode categorical features; if encoder missing, show helpful error
+                    for col in ['State', 'District', 'Season', 'Crop']:
+                        if col in input_df.columns:
+                            if col in label_encoders:
                                 try:
                                     input_df[col] = label_encoders[col].transform(input_df[col])
-                                except:
-                                    # If value not seen during training, use most common class
+                                except Exception:
+                                    # If value not seen during training, use most common class (0) as fallback
                                     input_df[col] = 0
-                    
+                            else:
+                                st.error(f"Label encoder for '{col}' not found in preprocessor. Please ensure the preprocessor contains fitted label encoders.")
+                                return
+
                     # Get prediction
                     prediction = st.session_state.yield_model.predict(input_df)
                     
@@ -400,4 +423,57 @@ def show_model_performance():
 
 if __name__ == "__main__":
     main()
+
+
+# Utility: check whether model and preprocessor artifacts exist and look reasonable
+def check_model_artifacts():
+    """Return a list of human-readable issues found with model artifacts.
+
+    This is a lightweight, non-exhaustive check that helps users diagnose missing
+    preprocessors or empty/missing label encoders which commonly cause runtime errors.
+    """
+    issues = []
+    try:
+        import joblib
+    except Exception:
+        # If joblib isn't available, nothing to check at runtime
+        return issues
+
+    model_sets = [
+        ('Crop Recommendation', Path('models/crop_recommendation')),
+        ('Fertilizer Prediction', Path('models/fertilizer_prediction')),
+        ('Yield Estimation', Path('models/yield_estimation')),
+    ]
+
+    for name, folder in model_sets:
+        if not folder.exists():
+            issues.append(f"{name}: folder missing ({folder})")
+            continue
+
+        pre = folder / 'preprocessor.pkl'
+        if not pre.exists():
+            issues.append(f"{name}: preprocessor.pkl not found in {folder}")
+            continue
+
+        # Try loading and probing the preprocessor
+        try:
+            pp = joblib.load(pre)
+            if not isinstance(pp, dict):
+                issues.append(f"{name}: preprocessor loaded but structure unexpected (not a dict)")
+                continue
+
+            # Check label_encoders: if present but empty, warn (this caused string->float errors)
+            le = pp.get('label_encoders', {})
+            if isinstance(le, dict) and len(le) == 0:
+                issues.append(f"{name}: preprocessor.label_encoders is empty — categorical fields won't be encoded")
+
+            # Check feature_names exist
+            fn = pp.get('feature_names')
+            if not fn:
+                issues.append(f"{name}: preprocessor.feature_names missing or empty")
+
+        except Exception as e:
+            issues.append(f"{name}: failed to load preprocessor ({e})")
+
+    return issues
 
