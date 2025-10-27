@@ -151,10 +151,13 @@ def main():
         st.markdown("---")
         # Compact navigation with icons — keep existing pages for routing
         st.markdown("### Navigation")
+        # Provide a non-empty label for accessibility; keep it visually hidden because
+        # we already render a visible "Navigation" heading above.
         page = st.radio(
-            "",
+            "Navigation",
             ["🏠 Home", "🌾 Crop Recommendation", "🧪 Fertilizer Prediction", "📊 Yield Estimation", "📈 Model Performance"],
             index=0,
+            label_visibility='collapsed',
         )
         
         st.markdown("---")
