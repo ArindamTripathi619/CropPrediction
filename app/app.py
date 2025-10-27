@@ -21,7 +21,7 @@ import numpy as np
 
 # Page configuration
 st.set_page_config(
-    page_title="🌱 Smart Crop Recommendation System",
+    page_title="Smart Crop Recommendation System",
     page_icon="🌱",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -107,6 +107,28 @@ def load_models():
 
 def main():
     """Main application function."""
+    # Render header
+    try:
+        st.markdown(
+            """
+            <div class="app-header card">
+                <div class="branding">
+                    <div class="logo">🌱</div>
+                    <div>
+                        <div class="title">Smart Crop Recommendation</div>
+                        <div class="tagline">Data-driven crop, fertilizer and yield guidance</div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <a href="https://github.com/ArindamTripathi619/CropPrediction" target="_blank" style="color:var(--primary); text-decoration:none; margin-right:12px;">Source</a>
+                    <a href="README.md" target="_blank" style="color:var(--muted-2); text-decoration:none;">Docs</a>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    except Exception:
+        pass
     # On startup, check for model/preprocessor artifacts and surface issues in the sidebar
     artifact_check = check_model_artifacts()
     critical = artifact_check.get('critical', [])
@@ -125,13 +147,14 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.title("🌱 Smart Crop Recommender")
+        st.markdown("<div class='sidebar-title'>🌱 Smart Crop Recommender</div>", unsafe_allow_html=True)
         st.markdown("---")
-        
+        # Compact navigation with icons — keep existing pages for routing
         st.markdown("### Navigation")
-        page = st.selectbox(
-            "Select a page",
-            ["🏠 Home", "🌾 Crop Recommendation", "🧪 Fertilizer Prediction", "📊 Yield Estimation", "📈 Model Performance"]
+        page = st.radio(
+            "",
+            ["🏠 Home", "🌾 Crop Recommendation", "🧪 Fertilizer Prediction", "📊 Yield Estimation", "📈 Model Performance"],
+            index=0,
         )
         
         st.markdown("---")
@@ -158,6 +181,19 @@ def main():
         show_yield_estimation()
     elif page == "📈 Model Performance":
         show_model_performance()
+
+    # Footer (global)
+    try:
+        st.markdown(
+            """
+            <div class='app-footer'>
+                Built with ❤️ · <a href='https://github.com/ArindamTripathi619/CropPrediction' target='_blank' style='color:var(--muted-2)'>GitHub</a>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    except Exception:
+        pass
 
 
 def show_home():

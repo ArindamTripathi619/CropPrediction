@@ -13,28 +13,28 @@ def render_input_form() -> Optional[Dict]:
     Returns:
         Dictionary of input parameters or None
     """
-    st.markdown("### Enter Your Parameters")
-    
+    st.markdown('<div class="form-section"><h4>### Enter Your Parameters</h4></div>', unsafe_allow_html=True)
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        st.markdown("#### 🌍 Environmental Parameters")
+        st.markdown('<div class="form-section"><h4>🌍 Environmental Parameters</h4></div>', unsafe_allow_html=True)
         temperature = st.slider("Temperature (°C)", 0.0, 50.0, 25.0, 0.1)
         humidity = st.slider("Humidity (%)", 0.0, 100.0, 80.0, 1.0)
         rainfall = st.slider("Rainfall (mm)", 0.0, 2000.0, 200.0, 10.0)
         pH = st.slider("pH Level", 0.0, 14.0, 7.0, 0.1)
-    
+
     with col2:
-        st.markdown("#### 🧪 Soil Composition")
+        st.markdown('<div class="form-section"><h4>🧪 Soil Composition</h4></div>', unsafe_allow_html=True)
         nitrogen = st.slider("Nitrogen (N)", 0, 150, 50, 1)
         phosphorus = st.slider("Phosphorus (P)", 0, 150, 40, 1)
         potassium = st.slider("Potassium (K)", 0, 150, 40, 1)
-    
+
     # Additional parameters
     with st.expander("📊 Additional Information"):
         st.markdown("Optional parameters for more accurate predictions")
         # Can add more parameters here if needed
-    
+
     return {
         'temperature': temperature,
         'humidity': humidity,
