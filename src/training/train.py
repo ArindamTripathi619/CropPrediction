@@ -17,6 +17,7 @@ from src.models.crop_model import CropRecommendationModel
 from src.models.fertilizer_model import FertilizerPredictionModel
 from src.models.yield_model import YieldEstimationModel
 from src.utils.config import get_config
+import json
 
 
 def train_crop_model(config):
@@ -78,6 +79,10 @@ def train_crop_model(config):
     model_path = Path(config['models']['crop_recommendation']['path'])
     crop_model.save_model(str(model_path))
     preprocessor.save_preprocessor(str(model_path.parent / 'preprocessor.pkl'))
+    # Persist metrics for UI/inspection
+    metrics_path = model_path.parent / 'metrics.json'
+    with open(metrics_path, 'w') as fh:
+        json.dump({'train': train_metrics, 'val': val_metrics, 'test': test_metrics}, fh)
     
     return crop_model
 
@@ -144,6 +149,10 @@ def train_fertilizer_model(config):
     model_path = Path(config['models']['fertilizer_prediction']['path'])
     fertilizer_model.save_model(str(model_path))
     preprocessor.save_preprocessor(str(model_path.parent / 'preprocessor.pkl'))
+    # Persist metrics
+    metrics_path = model_path.parent / 'metrics.json'
+    with open(metrics_path, 'w') as fh:
+        json.dump({'train': train_metrics, 'val': val_metrics, 'test': test_metrics}, fh)
     
     return fertilizer_model
 
@@ -210,6 +219,10 @@ def train_yield_model(config):
     model_path = Path(config['models']['yield_estimation']['path'])
     yield_model.save_model(str(model_path))
     preprocessor.save_preprocessor(str(model_path.parent / 'preprocessor.pkl'))
+    # Persist metrics
+    metrics_path = model_path.parent / 'metrics.json'
+    with open(metrics_path, 'w') as fh:
+        json.dump({'train': train_metrics, 'val': val_metrics, 'test': test_metrics}, fh)
     
     return yield_model
 

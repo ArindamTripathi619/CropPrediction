@@ -11,7 +11,12 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 # Import components using relative imports
 from components.input_form import render_input_form, get_user_input
-from components.results_display import render_crop_recommendations, render_fertilizer_results, render_yield_results
+from components.results_display import (
+    render_crop_recommendations,
+    render_fertilizer_results,
+    render_yield_results,
+    render_model_performance,
+)
 from src.models.crop_model import CropRecommendationModel
 from src.models.fertilizer_model import FertilizerPredictionModel
 from src.models.yield_model import YieldEstimationModel
@@ -494,14 +499,29 @@ def show_model_performance():
     except Exception:
         st.info("Preprocessor diagnostics unavailable (missing joblib or other error).")
 
-    # Placeholder for target metrics
+    # Try loading persisted metrics (saved by the training pipeline)
     st.markdown("### Performance Metrics")
-    st.markdown("""
-    **Target Metrics:**
-    - Crop Recommendation Accuracy: >85%
-    - Fertilizer Prediction Accuracy: >80%
-    - Yield Estimation R² Score: >0.75
-    """)
+    for name, folder in model_sets:
+        metrics_file = folder / 'metrics.json'
+        if metrics_file.exists():
+            try:
+                import json
+                mf = json.load(open(metrics_file, 'r'))
+                st.markdown(f"#### {name}")
+                # Render metrics for train/val/test
+                if isinstance(mf, dict):
+                    # Choose which metrics to show (prefer validation)
+                    display_metrics = mf.get('val') or mf.get('test') or mf.get('train')
+                    if isinstance(display_metrics, dict):
+                        render_model_performance(display_metrics)
+                    else:
+                        st.write("No numeric metrics found in metrics.json")
+                else:
+                    st.write("Unexpected metrics format in metrics.json")
+            except Exception as e:
+                st.write(f"Failed to load metrics for {name}: {e}")
+        else:
+            st.info(f"No saved metrics for {name}. Train models to generate metrics.json in {folder}.")
 
 
 
