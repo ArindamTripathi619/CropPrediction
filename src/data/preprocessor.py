@@ -28,6 +28,8 @@ class DataPreprocessor:
         self.label_encoder = {}
         self.imputer = None
         self.feature_names = None
+        # Explicit flag indicating whether the fitted preprocessor encountered categorical features
+        self.has_categorical = False
         
     def _create_scaler(self):
         """Create appropriate scaler."""
@@ -111,6 +113,7 @@ class DataPreprocessor:
             if col not in self.label_encoder:
                 self.label_encoder[col] = LabelEncoder()
                 df_encoded[col] = self.label_encoder[col].fit_transform(df[col].astype(str))
+                self.has_categorical = True
             else:
                 df_encoded[col] = self.label_encoder[col].transform(df[col].astype(str))
         
@@ -170,6 +173,10 @@ class DataPreprocessor:
 
         # Encode categorical features (fit encoders when fit=True)
         categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
+        # Reset flag when re-fitting
+        if fit:
+            self.has_categorical = False
+
         if len(categorical_cols) > 0:
             X = self.encode_categorical(X, categorical_cols)
 
@@ -185,6 +192,7 @@ class DataPreprocessor:
             'label_encoders': self.label_encoder,
             'imputer': self.imputer,
             'feature_names': self.feature_names
+            , 'has_categorical': self.has_categorical
         }
         joblib.dump(preprocessor_data, filepath)
     
@@ -195,4 +203,6 @@ class DataPreprocessor:
         self.label_encoder = preprocessor_data['label_encoders']
         self.imputer = preprocessor_data['imputer']
         self.feature_names = preprocessor_data['feature_names']
+        # Backwards compatible: some older preprocessor files may not have this key
+        self.has_categorical = preprocessor_data.get('has_categorical', False)
 
