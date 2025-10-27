@@ -22,10 +22,12 @@ An intelligent machine learning system that provides crop recommendations, ferti
 1. Clone or download this repository
 2. Create a virtual environment:
    ```bash
-   python -m venv venv
-   venv\Scripts\activate  # Windows
-   # or
-   source venv/bin/activate  # Linux/Mac
+   # Recommended: create a project-local virtual environment named `.venv`
+   python -m venv .venv
+   # Activate on Linux/macOS (zsh or bash)
+   source .venv/bin/activate
+   # On Windows (PowerShell)
+   # .\.venv\Scripts\Activate.ps1
    ```
 3. Install dependencies:
    ```bash
@@ -43,6 +45,33 @@ streamlit run app/app.py
 ```
 
 The application will open in your default browser at `http://localhost:8501`
+
+## 🧰 Development environment (recommended)
+
+We recommend running the app and tests inside the project virtual environment so runtime dependencies (for example, joblib and scikit-learn) are available to Streamlit and the diagnostics UI.
+
+- Create & activate (Linux/macOS / zsh):
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+
+- Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+- Run tests (from project root):
+   ```bash
+   .venv/bin/pytest -q
+   ```
+
+- Run the Streamlit app from the same environment (ensures diagnostics and model loading work):
+   ```bash
+   .venv/bin/streamlit run app/app.py
+   ```
+
+Note: If Streamlit is launched outside the project virtualenv, the app may display "Preprocessor diagnostics unavailable" or fail to load saved preprocessors because required packages (joblib, scikit-learn) are not on the system Python path. Using the project `.venv` avoids this issue.
 
 ## 📁 Project Structure
 

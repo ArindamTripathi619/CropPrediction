@@ -111,13 +111,20 @@ def load_models():
 def main():
     """Main application function."""
     # On startup, check for model/preprocessor artifacts and surface issues in the sidebar
-    missing = check_model_artifacts()
-    if missing:
-        with st.sidebar:
+    artifact_check = check_model_artifacts()
+    critical = artifact_check.get('critical', [])
+    info = artifact_check.get('info', [])
+
+    with st.sidebar:
+        if critical:
             st.error("Some model artifacts are missing or incomplete. See details below and follow the DEV_SETUP.md to generate them.")
-            for item in missing:
+            for item in critical:
                 st.write(f"- {item}")
             st.markdown("\n**How to fix:** run the training pipeline to generate model and preprocessor artifacts, or copy trained artifacts into the `models/` folder.")
+        if info:
+            st.info("Additional informational checks: these are generally non-critical but may affect categorical inputs. See details below.")
+            for item in info:
+                st.write(f"- {item}")
     
     # Sidebar
     with st.sidebar:
@@ -408,10 +415,50 @@ def show_model_performance():
     """Show model performance page."""
     st.title("📈 Model Performance")
     st.markdown("View performance metrics for trained models.")
-    
+
     st.info("Model performance metrics will be available after training models.")
-    
-    # Placeholder for model performance visualization
+
+    # Show saved preprocessor flags for transparency
+    st.markdown("### Preprocessor flags & quick diagnostics")
+    try:
+        import joblib
+        from pathlib import Path
+
+        model_sets = [
+            ('Crop Recommendation', Path('models/crop_recommendation')),
+            ('Fertilizer Prediction', Path('models/fertilizer_prediction')),
+            ('Yield Estimation', Path('models/yield_estimation')),
+        ]
+
+        for name, folder in model_sets:
+            with st.expander(name):
+                pre = folder / 'preprocessor.pkl'
+                if not pre.exists():
+                    st.warning(f"Preprocessor not found for {name} ({pre}).")
+                    continue
+
+                try:
+                    pp = joblib.load(pre)
+                except Exception as e:
+                    st.error(f"Failed to load preprocessor for {name}: {e}")
+                    continue
+
+                has_cat = pp.get('has_categorical', None)
+                encoders = pp.get('label_encoders', {})
+                fn = pp.get('feature_names', [])
+
+                st.write(f"has_categorical: {has_cat}")
+                st.write(f"num_label_encoders: {len(encoders) if isinstance(encoders, dict) else 'N/A'}")
+                st.write(f"num_feature_names: {len(fn) if fn else 0}")
+                if isinstance(encoders, dict) and len(encoders) > 0:
+                    st.markdown("**Encoders:**")
+                    for k in encoders.keys():
+                        st.write(f"- {k}")
+
+    except Exception:
+        st.info("Preprocessor diagnostics unavailable (missing joblib or other error).")
+
+    # Placeholder for target metrics
     st.markdown("### Performance Metrics")
     st.markdown("""
     **Target Metrics:**
@@ -421,23 +468,24 @@ def show_model_performance():
     """)
 
 
-if __name__ == "__main__":
-    main()
 
 
 # Utility: check whether model and preprocessor artifacts exist and look reasonable
 def check_model_artifacts():
-    """Return a list of human-readable issues found with model artifacts.
+    """Return a dict with 'critical' and 'info' lists describing issues found.
 
-    This is a lightweight, non-exhaustive check that helps users diagnose missing
-    preprocessors or empty/missing label encoders which commonly cause runtime errors.
+    - critical: problems that will almost certainly break runtime predictions (missing files,
+      corrupt preprocessor, missing feature_names, etc.)
+    - info: informational notes that may be expected (e.g. empty label_encoders when a model
+      has no categorical inputs). These are presented as info in the UI so users aren't
+      unnecessarily alarmed.
     """
-    issues = []
+    result = {'critical': [], 'info': []}
     try:
         import joblib
     except Exception:
         # If joblib isn't available, nothing to check at runtime
-        return issues
+        return result
 
     model_sets = [
         ('Crop Recommendation', Path('models/crop_recommendation')),
@@ -447,33 +495,52 @@ def check_model_artifacts():
 
     for name, folder in model_sets:
         if not folder.exists():
-            issues.append(f"{name}: folder missing ({folder})")
+            result['critical'].append(f"{name}: folder missing ({folder})")
             continue
 
         pre = folder / 'preprocessor.pkl'
         if not pre.exists():
-            issues.append(f"{name}: preprocessor.pkl not found in {folder}")
+            result['critical'].append(f"{name}: preprocessor.pkl not found in {folder}")
             continue
 
         # Try loading and probing the preprocessor
         try:
             pp = joblib.load(pre)
             if not isinstance(pp, dict):
-                issues.append(f"{name}: preprocessor loaded but structure unexpected (not a dict)")
+                result['critical'].append(f"{name}: preprocessor loaded but structure unexpected (not a dict)")
                 continue
 
-            # Check label_encoders: if present but empty, warn (this caused string->float errors)
-            le = pp.get('label_encoders', {})
-            if isinstance(le, dict) and len(le) == 0:
-                issues.append(f"{name}: preprocessor.label_encoders is empty — categorical fields won't be encoded")
-
-            # Check feature_names exist
+            # Check feature_names exist (critical)
             fn = pp.get('feature_names')
             if not fn:
-                issues.append(f"{name}: preprocessor.feature_names missing or empty")
+                result['critical'].append(f"{name}: preprocessor.feature_names missing or empty")
+
+            # Check label_encoders: empty encoders are informational (common when model has
+            # purely numeric inputs). For the crop recommender we commonly expect numeric-only
+            # features; skip the informational message for that case to avoid noise.
+            # Prefer using an explicit flag saved by the preprocessor when available
+            has_cat = pp.get('has_categorical', None)
+            if has_cat is False:
+                # Saved preprocessor says there are no categorical features — nothing to warn about
+                pass
+            elif has_cat is True:
+                # Preprocessor indicates categorical features were present; ensure encoders exist
+                le = pp.get('label_encoders', {})
+                if isinstance(le, dict) and len(le) == 0:
+                    result['info'].append(f"{name}: preprocessor.has_categorical=True but label_encoders is empty — categorical fields won't be encoded.")
+            else:
+                # Backwards compatibility: fall back to previous heuristic
+                le = pp.get('label_encoders', {})
+                if isinstance(le, dict) and len(le) == 0:
+                    if name != 'Crop Recommendation':
+                        result['info'].append(f"{name}: preprocessor.label_encoders is empty — categorical fields won't be encoded. This is OK if the model has no categorical inputs.")
 
         except Exception as e:
-            issues.append(f"{name}: failed to load preprocessor ({e})")
+            result['critical'].append(f"{name}: failed to load preprocessor ({e})")
 
-    return issues
+    return result
+
+
+if __name__ == "__main__":
+    main()
 
