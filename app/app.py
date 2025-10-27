@@ -27,29 +27,26 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
-st.markdown("""
-    <style>
-        .main-header {
-            font-size: 2.5rem;
-            color: #2ecc71;
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .metric-card {
-            background-color: #f0f2f6;
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            margin: 1rem 0;
-        }
-        .stButton>button {
-            background-color: #2ecc71;
-            color: white;
-            border-radius: 0.5rem;
-            width: 100%;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# Load centralized CSS file (assets/styles.css) for consistent theming
+try:
+    css_path = Path(__file__).parent / 'assets' / 'styles.css'
+    if css_path.exists():
+        css_text = css_path.read_text()
+        st.markdown(f"<style>{css_text}</style>", unsafe_allow_html=True)
+    else:
+        # Fallback minimal inline styles if file missing
+        st.markdown(
+            """
+            <style>
+                .main-header { font-size: 2.5rem; color: #2ecc71; text-align: center; margin-bottom: 1.5rem; }
+                .stButton>button { background-color: #2ecc71; color: white; border-radius: 0.5rem; width: 100%; }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+except Exception:
+    # Don't break app if CSS injection fails
+    pass
 
 # Initialize session state
 if 'models_loaded' not in st.session_state:

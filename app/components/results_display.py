@@ -23,18 +23,16 @@ def render_crop_recommendations(recommendations: List[Tuple[str, float]], input_
         st.warning("No recommendations available.")
         return
     
-    # Display top 3 recommendations
-    cols = st.columns(3)
-    colors = ['#2ecc71', '#27ae60', '#229954']
-    
-    for idx, (crop, confidence) in enumerate(recommendations):
-        with cols[idx]:
-            st.markdown(f"""
-                <div style="background-color: {colors[idx]}; padding: 1rem; border-radius: 0.5rem; text-align: center;">
-                    <h3 style="color: white; margin: 0;">{crop}</h3>
-                    <p style="color: white; font-size: 1.5rem; margin: 0.5rem 0;">{confidence:.1%}</p>
-                </div>
-            """, unsafe_allow_html=True)
+    # Display top 3 recommendations in styled cards
+    st.markdown('<div class="recommendation-grid">', unsafe_allow_html=True)
+    for idx, (crop, confidence) in enumerate(recommendations[:3]):
+        st.markdown(f"""
+            <div class="recommendation-card idx-{idx}">
+                <div class="title">{crop}</div>
+                <div class="score">{confidence:.1%}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -86,16 +84,15 @@ def render_fertilizer_results(recommendations: List[Tuple[str, float]], input_da
     # Display all recommendations
     st.markdown("#### All Recommendations")
     cols = st.columns(min(3, len(recommendations)))
-    colors = ['#3498db', '#2980b9', '#1f618d']
-    
+    st.markdown('<div class="recommendation-grid">', unsafe_allow_html=True)
     for idx, (fertilizer, confidence) in enumerate(recommendations[:3]):
-        with cols[idx]:
-            st.markdown(f"""
-                <div style="background-color: {colors[idx]}; padding: 1rem; border-radius: 0.5rem; text-align: center;">
-                    <h3 style="color: white; margin: 0;">{fertilizer}</h3>
-                    <p style="color: white; font-size: 1.5rem; margin: 0.5rem 0;">{confidence:.1%}</p>
-                </div>
-            """, unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="fertilizer-card idx-{idx}">
+                <div class="title">{fertilizer}</div>
+                <div class="score">{confidence:.1%}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     

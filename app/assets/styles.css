@@ -1,38 +1,95 @@
-/* Custom styles for Streamlit application */
-
-.main-header {
-    font-size: 2.5rem;
-    color: #2ecc71;
-    text-align: center;
-    margin-bottom: 2rem;
+/* App-wide variables */
+:root{
+    --accent: #2ecc71;
+    --accent-600: #27ae60;
+    --muted: #6c7a89;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --surface: #eef2f6;
+    --primary: #2b7a3a;
 }
 
-.metric-card {
-    background-color: #f0f2f6;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    margin: 1rem 0;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+html, body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    background: var(--bg);
 }
 
-.stButton>button {
-    background-color: #2ecc71;
+.main-header{
+    font-size: 2.25rem;
+    color: var(--primary);
+    text-align: left;
+    margin: 0 0 1rem 0;
+    font-weight: 700;
+}
+
+/* Page container */
+.app-container{
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Card styles */
+.card{
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(35,47,58,0.06);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.metric-card{ padding: 1.25rem; }
+
+/* Buttons */
+.stButton>button{
+    background: linear-gradient(90deg, var(--accent), var(--accent-600));
+    color: white !important;
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    border: none;
+    box-shadow: 0 6px 12px rgba(43,122,58,0.14);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.stButton>button:hover{ transform: translateY(-2px); box-shadow: 0 10px 20px rgba(43,122,58,0.18); }
+
+/* Recommendation cards */
+.recommendation-grid{ display: flex; gap: 1rem; }
+.recommendation-card{
+    flex: 1 1 0;
+    border-radius: 10px;
+    padding: 1rem;
     color: white;
-    border-radius: 0.5rem;
-    width: 100%;
-    transition: all 0.3s;
-}
-
-.stButton>button:hover {
-    background-color: #27ae60;
-    transform: translateY(-2px);
-}
-
-.prediction-card {
-    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-    padding: 2rem;
-    border-radius: 1rem;
-    color: white;
     text-align: center;
-    margin: 1rem 0;
+}
+.recommendation-card .title{ font-weight: 700; font-size: 1.1rem; margin: 0; }
+.recommendation-card .score{ font-size: 1.5rem; margin-top: 0.5rem; }
+.recommendation-card.idx-0{ background: linear-gradient(135deg, #2ecc71, #27ae60); }
+.recommendation-card.idx-1{ background: linear-gradient(135deg, #27ae60, #1e8449); }
+.recommendation-card.idx-2{ background: linear-gradient(135deg, #1e8449, #147f43); }
+
+/* Fertilizer cards */
+.fertilizer-card{ border-radius: 10px; padding: 0.9rem; color: white; text-align: center; }
+.fertilizer-card.idx-0{ background: linear-gradient(135deg,#3498db,#2e86c1); }
+.fertilizer-card.idx-1{ background: linear-gradient(135deg,#2e86c1,#2874a6); }
+.fertilizer-card.idx-2{ background: linear-gradient(135deg,#2471a3,#1b4f72); }
+
+/* Inputs */
+.form-section{ padding: 0.5rem 0; }
+.form-section h4{ margin: 0 0 0.5rem 0; }
+
+/* Plots
+     When using plotly or metric components the container inherits background—add spacing */
+.plot-container{ padding: 0.5rem 0.25rem; }
+
+/* Performance table */
+.perf-table{ margin-top: 0.5rem; }
+
+/* Make expanders and sidebar feel lighter */
+.stExpander{ border-radius: 8px; }
+
+/* Responsive tweaks */
+@media (max-width: 800px){
+    .recommendation-grid{ flex-direction: column; }
 }
 
